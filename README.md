@@ -8,6 +8,9 @@ I got tired of waiting for someone to create something like this so I've decided
 Roadmap (Simplified)
 
 **1** - _Make the Hook that captures the Games Work_
+
 **2** - _Implement FDP (Frame Disaster Protocol) aka FPS Counter on Mangohud or as a independent overlay_
+
 **3** - _Implement OMG (Open-Source Mesozoic Glitches) aka FrameGen algorythm_
+
 **4** - _Have Fun_
