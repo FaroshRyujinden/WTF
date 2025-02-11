@@ -1,5 +1,5 @@
 # WTF
-WTF (Wild Tuxanossaurus FrameGeneration) Is a FrameGeneration App for Linux (Similar to Lossless Scaling Frame Gen) running as an Addon to Mangohud.
+WTF (Wild Tuxanossaurus FrameGeneration) Is a Frame Generation App for Linux (Similar to Lossless Scaling Frame Gen) running as an Addon to Mangohud.
 
 **This project is a WIP and it is on the first stages of development, this is also my first attempt to code so I'll ask you guys for pacience cause I have no idea of what I'm doing.**
 
