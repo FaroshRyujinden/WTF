@@ -1,3 +1,7 @@
+![Designed by Freepik](https://github.com/user-attachments/assets/2a2c0f77-b781-422f-8035-f8ec932338ee)
+
+(Desingned by Freepik)
+
 # Wild Tuxanossaurus FrameGeneration (WTF)
 Wild Tuxanossaurus FrameGeneration (WTF) Is a Frame Generation App for Linux (Similar to Lossless Scaling Frame Gen) running as an Addon to Mangohud.
 
