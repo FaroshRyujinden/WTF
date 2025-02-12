@@ -1,4 +1,6 @@
-![Designed by Freepik](https://github.com/user-attachments/assets/2a2c0f77-b781-422f-8035-f8ec932338ee)
+
+![256](https://github.com/user-attachments/assets/8f1275e4-32ba-4cb7-92b0-0831881e4383) ![256Tux](https://github.com/user-attachments/assets/006c7813-ecb8-4311-a9b5-f9153af03778)
+
 
 (Desingned by Freepik)
 
