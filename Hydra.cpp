@@ -58,7 +58,7 @@ VkCommandPool                    g_commandPool       = VK_NULL_HANDLE;
 std::vector<VkFramebuffer>       g_framebuffers;
 VkSemaphore                      g_imageAvailableSemaphore = VK_NULL_HANDLE;
 VkSemaphore                      g_renderFinishedSemaphore = VK_NULL_HANDLE;
-uint32_t                         vertexCount         = 4;
+uint32_t                         vertexCount         = 3; // Exemplo: triângulo
 
 // Variáveis para o frame interpolado
 VkImage         g_interpolatedImage = VK_NULL_HANDLE;
@@ -122,7 +122,6 @@ VkExtent2D         chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities
 void createSwapchain();
 void createImageViews();
 void createRenderPass();
-void createDescriptorSetLayout();
 void createGraphicsPipeline();
 void createCommandPool();
 void createFramebuffers();
@@ -133,7 +132,6 @@ void recreateSwapchain();
 void cleanupSwapchain();
 VkCommandBuffer beginSingleTimeCommands();
 void endSingleTimeCommands(VkCommandBuffer commandBuffer);
-vkQueueWaitIdle(g_graphicsQueue);
 
 // Funções auxiliares para buffer e imagem
 void CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties,
@@ -175,23 +173,22 @@ GenerateOmgFrameFunc pGenerateOmgFrame = nullptr;
 void* omgHandle = nullptr;
 
 void LoadOmgModule(const std::filesystem::path& exePath) {
-    // ... código existente ...
-    if (!omgHandle) {
-        std::cerr << "[Hydra] Falha ao carregar Omg.so: " << dlerror() << std::endl;
+    std::filesystem::path libPath = exePath.parent_path() / "FG" / "Omg.so";
+    std::cout << "[Hydra] Tentando carregar Omg.so de: " << libPath << std::endl;
+    if (!std::filesystem::exists(libPath)) {
+        std::cerr << "[Hydra] Omg.so não encontrado no diretório: " << libPath << std::endl;
         return;
     }
-
-    pGenerateOmgFrame = (GenerateOmgFrameFunc)dlsym(omgHandle, "GenerateOmgFrame");
-    if (!pGenerateOmgFrame) {
-        std::cerr << "[Hydra] Função GenerateOmgFrame não encontrada: " << dlerror() << std::endl;
-        dlclose(omgHandle);
-        omgHandle = nullptr;
+    omgHandle = dlopen(libPath.c_str(), RTLD_LAZY);
+    if (!omgHandle) {
+        std::cerr << "[Hydra] Falha ao carregar Omg.so: " << dlerror() << std::endl;
+    } else {
+        std::cout << "[Hydra] Omg.so carregado com sucesso!" << std::endl;
     }
 }
 
 // Declaração da função HYDRA_Init
 extern "C" void HYDRA_Init(const std::filesystem::path& exePath);
-void createDescriptorSetLayout();
 
 // ================================
 // FUNÇÃO MAIN
@@ -222,37 +219,10 @@ extern "C" void HYDRA_Init(const std::filesystem::path& exePath) {
     createSwapchain();
     createImageViews();
     createRenderPass();
-    createDescriptorSetLayout();
     createGraphicsPipeline();
     createCommandPool();
     createFramebuffers();
     createSyncObjects();
-    
-    }
-}
-
-// --- Criar Descriptor Set Layout e Pool ---
-void createDescriptorSetLayout() {
-    samplerBinding.binding = 0;
-    samplerBinding.descriptorCount = 1;
-    samplerBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    samplerBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-    samplerBinding.pImmutableSamplers = nullptr;
-
-    layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-    layoutInfo.bindingCount = 1;
-    layoutInfo.pBindings = &samplerBinding;
-
-    if (vkCreateDescriptorSetLayout(g_device, &layoutInfo, nullptr, &g_descriptorSetLayout) != VK_SUCCESS) {
-        throw std::runtime_error("Falha ao criar descriptor set layout!");
-    }
-}
-
-// Verificação explícita do handle (opcional, mas recomendado)
-if (g_descriptorSetLayout == VK_NULL_HANDLE) {
-    throw std::runtime_error("Descriptor Set Layout inválido!");
-}
-
 
     // Passa o exePath para LoadOmgModule
     LoadOmgModule(exePath);    
@@ -462,9 +432,6 @@ extern "C" void HYDRA_Update() {
 extern "C" void HYDRA_Cleanup() {
     std::cout << "[Hydra] Iniciando cleanup()" << std::endl;
     overlayActive.store(false);
-    vkQueueWaitIdle(g_graphicsQueue);
-    }
-    
     if (g_device != VK_NULL_HANDLE) {
         vkDeviceWaitIdle(g_device);
     }
@@ -537,8 +504,6 @@ extern "C" void HYDRA_Cleanup() {
 void CaptureFrame(VkCommandBuffer commandBuffer, VkImage image) {
     std::cout << "[Debug] CaptureFrame chamado!" << std::endl;
     
-    
-    
     VkExtent2D extent = g_swapchainExtent;
     VkDeviceSize imageSize = extent.width * extent.height * 4;  // Assume RGBA (4 bytes por pixel)
 
@@ -591,8 +556,6 @@ void CaptureFrame(VkCommandBuffer commandBuffer, VkImage image) {
         uint8_t* outputPixels = (uint8_t*)malloc(imageSize);
         pGenerateOmgFrame(0.5f, lastFrame.pixels, currentFrame.pixels,
                           extent.width, extent.height, outputPixels);
-                          
-        
 
         // --- Novo: Copiar outputPixels para a imagem Vulkan ---
         VkBuffer interpolatedStagingBuffer;
@@ -629,8 +592,6 @@ void CaptureFrame(VkCommandBuffer commandBuffer, VkImage image) {
         vkDestroyBuffer(g_device, interpolatedStagingBuffer, nullptr);
         vkFreeMemory(g_device, interpolatedStagingBufferMemory, nullptr);
         free(outputPixels);
-    } else {
-    std::cerr << "[Hydra] Condições não atendidas para gerar frame." << std::endl;
     }
 }
 
@@ -639,7 +600,7 @@ void CaptureFrame(VkCommandBuffer commandBuffer, VkImage image) {
 // ================================
 void createInstance() {
     VkApplicationInfo appInfo{};
-    appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
+    appInfo.sType              = VK_STRUCTURE_TYPE_APPLICATION_INFO;
     appInfo.pApplicationName   = "Hydra Overlay";
     appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
     appInfo.pEngineName        = "Hydra Engine";
@@ -647,19 +608,15 @@ void createInstance() {
     appInfo.apiVersion         = VK_API_VERSION_1_1;
     
     const char* extensions[] = { VK_KHR_SURFACE_EXTENSION_NAME, VK_KHR_XLIB_SURFACE_EXTENSION_NAME };
-    const char* validationLayers[] = { "VK_LAYER_KHRONOS_validation" };
-
-    VkInstanceCreateInfo createInfo{}; // ✅ Declare createInfo aqui
-    createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
+    
+    VkInstanceCreateInfo createInfo{};
+    createInfo.sType            = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
     createInfo.pApplicationInfo = &appInfo;
     createInfo.enabledExtensionCount = 2;
     createInfo.ppEnabledExtensionNames = extensions;
-    createInfo.enabledLayerCount = 1; // ✅ Agora está correto
-    createInfo.ppEnabledLayerNames = validationLayers;
-
-    if (vkCreateInstance(&createInfo, nullptr, &g_instance) != VK_SUCCESS) {
+    
+    if (vkCreateInstance(&createInfo, nullptr, &g_instance) != VK_SUCCESS)
         throw std::runtime_error("Falha ao criar instância Vulkan!");
-    }
 }
 
 void createSurface() {
@@ -951,7 +908,7 @@ void createGraphicsPipeline() {
       
     VkPipelineInputAssemblyStateCreateInfo inputAssembly{};
     inputAssembly.sType                  = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-    inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
+    inputAssembly.topology               = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
     inputAssembly.primitiveRestartEnable = VK_FALSE;
     
     VkViewport viewport{};
@@ -1009,9 +966,6 @@ void createGraphicsPipeline() {
     if (vkCreatePipelineLayout(g_device, &pipelineLayoutInfo, nullptr, &g_pipelineLayout) != VK_SUCCESS) {
         throw std::runtime_error("Falha ao criar pipeline layout!");
     }
-    
-    // Fragment Shader (GLSL):
-    layout(binding = 0) uniform sampler2D texSampler; // Binding 0!
     
     VkGraphicsPipelineCreateInfo pipelineInfo{};
     pipelineInfo.sType               = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
@@ -1139,6 +1093,7 @@ void endSingleTimeCommands(VkCommandBuffer commandBuffer) {
     submitInfo.commandBufferCount = 1;
     submitInfo.pCommandBuffers    = &commandBuffer;
     vkQueueSubmit(g_graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
+    vkQueueWaitIdle(g_graphicsQueue);
     vkFreeCommandBuffers(g_device, g_commandPool, 1, &commandBuffer);
 }
 
@@ -1186,39 +1141,28 @@ uint32_t FindMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties) {
 
 // Stub para TransitionImageLayout
 void TransitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout,
-                           VkImageLayout newLayout, VkCommandBuffer commandBuffer) 
-{
+                           VkImageLayout newLayout, VkCommandBuffer commandBuffer) {
     VkImageMemoryBarrier barrier{};
-    barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-    barrier.oldLayout = oldLayout;
-    barrier.newLayout = newLayout;
-    barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    barrier.image = image;
-    barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-    barrier.subresourceRange.baseMipLevel = 0;
-    barrier.subresourceRange.levelCount = 1;
-    barrier.subresourceRange.baseArrayLayer = 0;
-    barrier.subresourceRange.layerCount = 1;
-
+    barrier.sType                           = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+    barrier.oldLayout                       = oldLayout;
+    barrier.newLayout                       = newLayout;
+    barrier.srcQueueFamilyIndex             = VK_QUEUE_FAMILY_IGNORED;
+    barrier.dstQueueFamilyIndex             = VK_QUEUE_FAMILY_IGNORED;
+    barrier.image                           = image;
+    barrier.subresourceRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
+    barrier.subresourceRange.baseMipLevel     = 0;
+    barrier.subresourceRange.levelCount       = 1;
+    barrier.subresourceRange.baseArrayLayer   = 0;
+    barrier.subresourceRange.layerCount       = 1;
+    
     VkPipelineStageFlags sourceStage;
     VkPipelineStageFlags destinationStage;
-
-    // Configurar src/dst AccessMask e stages conforme necessário
-    if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL) {
-        barrier.srcAccessMask = 0;
-        barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-        sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-        destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
-    } else if (oldLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && newLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) {
-        barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-        barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-        sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
-        destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-    } else {
-        throw std::invalid_argument("Transição de layout não suportada!");
-    }
-
+    
+    barrier.srcAccessMask = 0;
+    barrier.dstAccessMask = 0;
+    sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+    destinationStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+    
     vkCmdPipelineBarrier(
         commandBuffer,
         sourceStage, destinationStage,
@@ -1227,20 +1171,6 @@ void TransitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayo
         0, nullptr,
         1, &barrier
     );
-}
-    
-    if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL) {
-    barrier.srcAccessMask = 0;
-    barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-    sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-    destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
-} else if (oldLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && newLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) {
-    barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-    barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-    sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
-    destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-} else {
-    throw std::invalid_argument("Transição de layout não suportada!");
 }
 
 // Stub para CopyImageToBuffer
