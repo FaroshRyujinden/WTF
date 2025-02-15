@@ -5,7 +5,7 @@
 (Desingned by Freepik)
 
 # Wild Tuxanossaurus FrameGeneration (WTF)
-Wild Tuxanossaurus FrameGeneration (WTF) Is a Frame Generation App for Linux (Similar to Lossless Scaling Frame Gen) running as an Addon to Mangohud.
+Wild Tuxanossaurus FrameGeneration (WTF) Is a Frame Generation App for Linux (Similar to Lossless Scaling Frame Gen).
 
 **This project is a WIP and it is on the first stages of development, this is also my first attempt to code so I'll ask you guys for pacience cause I have no idea of what I'm doing.**
 
@@ -15,12 +15,16 @@ I got tired of waiting for someone to create something like this so I've decided
 
 **1** - _Implement HYDRA (Hook Your Display: Raptor Attack) aka the Hook that captures the Game Window_
 
-**2** - _Implement FDP (Frame Disaster Protocol) aka FPS Counter on Mangohud or as a independent overlay_
+**2** - _Implement OMG (Open-Source Mesozoic Glitches) aka FrameGen algorythm_ 
 
-**3** - _Implement OMG (Open-Source Mesozoic Glitches) aka FrameGen algorythm_
+**3** - _Implement FDP (Frame Disaster Protocol) aka FPS Counter on Mangohud or as a independent overlay_ 
 
 **4** - _Have Fun_
 
-**Future Features**
+**Future Features (Maybe?)**
 
-_**Velociraptor Sync**_ = V-Sync Support
+_**Tray Icon**_
+
+_**UI**_
+
+_**AppImage Package**_
