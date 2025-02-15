@@ -15,27 +15,30 @@
 #include <set>
 #include <algorithm>
 #include <stdexcept>
-#include <filesystem> // Para manipulação de caminhos de forma moderna
+#include <filesystem>
 #include <glm/glm.hpp>
 #include <glm/vec2.hpp>
 #include <array>
 
-// --- Novo: Criar vertex buffer ---
-// Definição da estrutura de vértice e dados de exemplo
 struct Vertex {
     glm::vec2 pos;
     glm::vec2 texCoord;
 };
 
+// Vértices para um quadrado usando dois triângulos (6 vértices)
 const std::vector<Vertex> vertices = {
+    // Triângulo 1
     {{-1.0f, -1.0f}, {0.0f, 0.0f}},
     {{ 1.0f, -1.0f}, {1.0f, 0.0f}},
     {{ 1.0f,  1.0f}, {1.0f, 1.0f}},
-    {{-1.0f,  1.0f}, {0.0f, 1.0f}}
+    // Triângulo 2
+    {{ 1.0f,  1.0f}, {1.0f, 1.0f}},
+    {{-1.0f,  1.0f}, {0.0f, 1.0f}},
+    {{-1.0f, -1.0f}, {0.0f, 0.0f}}
 };
 
 // ================================
-// VARIÁVEIS GLOBAIS RELACIONADAS AO VULKAN
+// VARIÁVEIS GLOBAIS
 // ================================
 VkInstance         g_instance            = VK_NULL_HANDLE;
 VkSurfaceKHR       g_surface             = VK_NULL_HANDLE;
@@ -58,9 +61,9 @@ VkCommandPool                    g_commandPool       = VK_NULL_HANDLE;
 std::vector<VkFramebuffer>       g_framebuffers;
 VkSemaphore                      g_imageAvailableSemaphore = VK_NULL_HANDLE;
 VkSemaphore                      g_renderFinishedSemaphore = VK_NULL_HANDLE;
-uint32_t                         vertexCount         = 3; // Exemplo: triângulo
+uint32_t                         vertexCount         = 6; // Corrigido para 6 vértices
 
-// Variáveis para o frame interpolado
+// Frame interpolado
 VkImage         g_interpolatedImage = VK_NULL_HANDLE;
 VkDeviceMemory  g_interpolatedImageMemory = VK_NULL_HANDLE;
 VkImageView     g_interpolatedImageView = VK_NULL_HANDLE;
@@ -73,10 +76,8 @@ VkDescriptorSet  g_descriptorSet = VK_NULL_HANDLE;
 VkBuffer         g_vertexBuffer = VK_NULL_HANDLE;
 VkDeviceMemory   g_vertexBufferMemory = VK_NULL_HANDLE;
 
-// Variável atômica para controlar o overlay
 std::atomic<bool> overlayActive(false);
 
-// Ponteiros X11 – devem ser definidos externamente (no seu ambiente, estes serão configurados)
 extern Display* xDisplay;
 extern Window   targetWindow;
 
@@ -97,7 +98,6 @@ struct SwapchainSupportDetails {
     std::vector<VkPresentModeKHR> presentModes;
 };
 
-// Estrutura para armazenar dados dos frames capturados
 struct FrameData {
     VkImage   image;
     uint8_t*  pixels;
@@ -108,7 +108,7 @@ FrameData lastFrame    = { VK_NULL_HANDLE, nullptr, 0, 0 };
 FrameData currentFrame = { VK_NULL_HANDLE, nullptr, 0, 0 };
 
 // ================================
-// PROTÓTIPOS DE FUNÇÕES AUXILIARES
+// PROTÓTIPOS DE FUNÇÕES
 // ================================
 void createInstance();
 void createSurface();
@@ -133,7 +133,6 @@ void cleanupSwapchain();
 VkCommandBuffer beginSingleTimeCommands();
 void endSingleTimeCommands(VkCommandBuffer commandBuffer);
 
-// Funções auxiliares para buffer e imagem
 void CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties,
                   VkBuffer &buffer, VkDeviceMemory &bufferMemory);
 uint32_t FindMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
@@ -141,11 +140,9 @@ void TransitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayo
                            VkImageLayout newLayout, VkCommandBuffer commandBuffer);
 void CopyImageToBuffer(VkImage image, VkBuffer buffer, VkExtent2D extent, VkCommandBuffer commandBuffer);
 
-
 // ================================
 // FUNÇÃO: createVertexBuffer()
 // ================================
-// Cria o vertex buffer a partir dos vértices definidos.
 void createVertexBuffer() {
     VkDeviceSize bufferSize = sizeof(vertices[0]) * vertices.size();
     CreateBuffer(bufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
@@ -159,35 +156,38 @@ void createVertexBuffer() {
 }
 
 // ================================
-// FUNÇÕES DE HOOK (INTERCEPTAÇÃO)
+// HOOKS E INTEGRAÇÃO COM Omg.so
 // ================================
 static PFN_vkQueuePresentKHR real_vkQueuePresentKHR = nullptr;
 static PFN_vkAcquireNextImageKHR real_vkAcquireNextImageKHR = nullptr;
 static PFN_vkQueueSubmit       real_vkQueueSubmit       = nullptr;
 
-// ================================
-// INTEGRAÇÃO COM Omg.so
-// ================================
 typedef void (*GenerateOmgFrameFunc)(float, uint8_t*, uint8_t*, uint32_t, uint32_t, uint8_t*);
 GenerateOmgFrameFunc pGenerateOmgFrame = nullptr;
 void* omgHandle = nullptr;
 
 void LoadOmgModule(const std::filesystem::path& exePath) {
     std::filesystem::path libPath = exePath.parent_path() / "FG" / "Omg.so";
-    std::cout << "[Hydra] Tentando carregar Omg.so de: " << libPath << std::endl;
+    std::cout << "[Hydra] Carregando Omg.so de: " << libPath << std::endl;
     if (!std::filesystem::exists(libPath)) {
-        std::cerr << "[Hydra] Omg.so não encontrado no diretório: " << libPath << std::endl;
+        std::cerr << "[Hydra] Omg.so não encontrado!" << std::endl;
         return;
     }
     omgHandle = dlopen(libPath.c_str(), RTLD_LAZY);
     if (!omgHandle) {
         std::cerr << "[Hydra] Falha ao carregar Omg.so: " << dlerror() << std::endl;
+        return;
+    }
+    pGenerateOmgFrame = (GenerateOmgFrameFunc)dlsym(omgHandle, "GenerateOmgFrame");
+    if (!pGenerateOmgFrame) {
+        std::cerr << "[Hydra] Falha ao carregar GenerateOmgFrame: " << dlerror() << std::endl;
+        dlclose(omgHandle);
+        omgHandle = nullptr;
     } else {
         std::cout << "[Hydra] Omg.so carregado com sucesso!" << std::endl;
     }
 }
 
-// Declaração da função HYDRA_Init
 extern "C" void HYDRA_Init(const std::filesystem::path& exePath);
 
 // ================================
@@ -195,19 +195,13 @@ extern "C" void HYDRA_Init(const std::filesystem::path& exePath);
 // ================================
 int main(int argc, char* argv[]) {
     std::filesystem::path exePath = std::filesystem::absolute(argv[0]);
-    std::cout << "[Hydra] Caminho absoluto do executável: " << exePath << std::endl;
-    
-    // Cria o vertex buffer
     createVertexBuffer();
-
-    // Chama a função de inicialização passando o caminho do executável
     HYDRA_Init(exePath);
-
     return 0;
 }
 
 // ================================
-// IMPLEMENTAÇÃO DA FUNÇÃO HYDRA_Init
+// IMPLEMENTAÇÃO DA HYDRA_Init
 // ================================
 extern "C" void HYDRA_Init(const std::filesystem::path& exePath) {
     std::cout << "[Hydra] Inicializando Vulkan..." << std::endl;
@@ -223,15 +217,13 @@ extern "C" void HYDRA_Init(const std::filesystem::path& exePath) {
     createCommandPool();
     createFramebuffers();
     createSyncObjects();
-
-    // Passa o exePath para LoadOmgModule
-    LoadOmgModule(exePath);    
+    LoadOmgModule(exePath);
     
-    // --- Criar imagem para o quadro interpolado ---
+    // Criação da imagem interpolada
     VkImageCreateInfo imageInfo{};
     imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
     imageInfo.imageType = VK_IMAGE_TYPE_2D;
-    imageInfo.format = VK_FORMAT_B8G8R8A8_UNORM;
+    imageInfo.format = g_swapchainImageFormat; // Usar formato da swapchain
     imageInfo.extent = { g_swapchainExtent.width, g_swapchainExtent.height, 1 };
     imageInfo.mipLevels = 1;
     imageInfo.arrayLayers = 1;
@@ -261,7 +253,7 @@ extern "C" void HYDRA_Init(const std::filesystem::path& exePath) {
     viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
     viewInfo.image = g_interpolatedImage;
     viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-    viewInfo.format = VK_FORMAT_B8G8R8A8_UNORM;
+    viewInfo.format = g_swapchainImageFormat; // Usar formato correto
     viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
     viewInfo.subresourceRange.levelCount = 1;
     viewInfo.subresourceRange.layerCount = 1;
@@ -282,7 +274,7 @@ extern "C" void HYDRA_Init(const std::filesystem::path& exePath) {
         throw std::runtime_error("Falha ao criar sampler!");
     }
 
-    // --- Criar Descriptor Set Layout e Pool ---
+    // Descriptor set layout e pool
     VkDescriptorSetLayoutBinding samplerBinding{};
     samplerBinding.binding = 0;
     samplerBinding.descriptorCount = 1;
@@ -339,13 +331,13 @@ extern "C" void HYDRA_Init(const std::filesystem::path& exePath) {
 }
 
 // ================================
-// FUNÇÃO HYDRA_Update (chamada a cada frame)
+// FUNÇÃO HYDRA_Update
 // ================================
 extern "C" void HYDRA_Update() {
     if (!overlayActive.load()) return;
     if (g_device == VK_NULL_HANDLE || g_commandPool == VK_NULL_HANDLE ||
         g_graphicsPipeline == VK_NULL_HANDLE || g_swapchain == VK_NULL_HANDLE) {
-        std::cerr << "[Hydra] Recursos não inicializados corretamente." << std::endl;
+        std::cerr << "[Hydra] Recursos não inicializados!" << std::endl;
         return;
     }
 
@@ -374,15 +366,18 @@ extern "C" void HYDRA_Update() {
 
     vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, g_graphicsPipeline);
-    vkCmdDraw(commandBuffer, vertexCount, 1, 0, 0);
-    vkCmdEndRenderPass(commandBuffer);
-
-    // --- Novo: Vincular o descriptor set ---
+    
+    // Vincular vertex buffer
+    VkBuffer vertexBuffers[] = {g_vertexBuffer};
+    VkDeviceSize offsets[] = {0};
+    vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
+    
+    // Vincular descriptor set e desenhar
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, 
         g_pipelineLayout, 0, 1, &g_descriptorSet, 0, nullptr);
+    vkCmdDraw(commandBuffer, vertexCount, 1, 0, 0);
 
-    // Desenhar um quad (6 vértices)
-    vkCmdDraw(commandBuffer, 6, 1, 0, 0);
+    vkCmdEndRenderPass(commandBuffer);
 
     if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
         throw std::runtime_error("Falha ao gravar command buffer!");
@@ -402,7 +397,7 @@ extern "C" void HYDRA_Update() {
     submitInfo.pSignalSemaphores = signalSemaphores;
 
     if (vkQueueSubmit(g_graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE) != VK_SUCCESS) {
-        std::cerr << "[Hydra] Falha ao submeter o command buffer." << std::endl;
+        std::cerr << "[Hydra] Falha ao submeter command buffer." << std::endl;
         return;
     }
 
@@ -419,7 +414,7 @@ extern "C" void HYDRA_Update() {
     if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || !overlayActive.load()) {
         recreateSwapchain();
     } else if (result != VK_SUCCESS) {
-        std::cerr << "[Hydra] Falha ao apresentar a imagem da swapchain." << std::endl;
+        std::cerr << "[Hydra] Falha ao apresentar imagem." << std::endl;
         return;
     }
 
@@ -427,15 +422,26 @@ extern "C" void HYDRA_Update() {
 }
 
 // ================================
-// FUNÇÃO HYDRA_Cleanup (libera recursos)
+// FUNÇÃO HYDRA_Cleanup (ATUALIZADA)
 // ================================
 extern "C" void HYDRA_Cleanup() {
-    std::cout << "[Hydra] Iniciando cleanup()" << std::endl;
+    std::cout << "[Hydra] Limpando recursos..." << std::endl;
     overlayActive.store(false);
     if (g_device != VK_NULL_HANDLE) {
         vkDeviceWaitIdle(g_device);
     }
     cleanupSwapchain();
+    
+    // Limpar recursos do vertex buffer
+    if (g_vertexBuffer != VK_NULL_HANDLE) {
+        vkDestroyBuffer(g_device, g_vertexBuffer, nullptr);
+        g_vertexBuffer = VK_NULL_HANDLE;
+    }
+    if (g_vertexBufferMemory != VK_NULL_HANDLE) {
+        vkFreeMemory(g_device, g_vertexBufferMemory, nullptr);
+        g_vertexBufferMemory = VK_NULL_HANDLE;
+    }
+
     if (g_graphicsPipeline != VK_NULL_HANDLE) {
         vkDestroyPipeline(g_device, g_graphicsPipeline, nullptr);
         g_graphicsPipeline = VK_NULL_HANDLE;
@@ -477,20 +483,18 @@ extern "C" void HYDRA_Cleanup() {
         omgHandle = nullptr;
     }
     
+    // Limpar recursos da imagem interpolada
     if (g_interpolatedImage != VK_NULL_HANDLE) {
         vkDestroyImage(g_device, g_interpolatedImage, nullptr);
         vkFreeMemory(g_device, g_interpolatedImageMemory, nullptr);
         vkDestroyImageView(g_device, g_interpolatedImageView, nullptr);
     }
-    
     if (g_textureSampler != VK_NULL_HANDLE) {
         vkDestroySampler(g_device, g_textureSampler, nullptr);
     }
-
     if (g_descriptorSetLayout != VK_NULL_HANDLE) {
         vkDestroyDescriptorSetLayout(g_device, g_descriptorSetLayout, nullptr);
     }
-
     if (g_descriptorPool != VK_NULL_HANDLE) {
         vkDestroyDescriptorPool(g_device, g_descriptorPool, nullptr);
     }
