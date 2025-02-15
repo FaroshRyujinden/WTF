@@ -1,7 +1,5 @@
 
-![256](https://github.com/user-attachments/assets/8f1275e4-32ba-4cb7-92b0-0831881e4383) ![256Tux](https://github.com/user-attachments/assets/006c7813-ecb8-4311-a9b5-f9153af03778)
-
-(Desingned by Freepik)
+![256xPurple](https://github.com/user-attachments/assets/7b8bd99f-f735-47b6-b4ca-59ecb455d264)  ![256Tux](https://github.com/user-attachments/assets/006c7813-ecb8-4311-a9b5-f9153af03778)
 
 🇧🇷 PT-BR
 
