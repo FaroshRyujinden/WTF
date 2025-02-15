@@ -13,18 +13,18 @@ I got tired of waiting for someone to create something like this so I've decided
 
 **Roadmap (Simplified)**
 
-**1** - _Implement HYDRA (Hook Your Display: Raptor Attack) aka the Hook that captures the Game Window_
+**1** - _Implement HYDRA (Hook Your Display: Raptor Attack) aka the Hook that captures the Game Window_ ✅
 
-**2** - _Implement OMG (Open-Source Mesozoic Glitches) aka FrameGen algorythm_ 
+**2** - _Implement OMG (Open-Source Mesozoic Glitches) aka FrameGen algorythm_ 🚫 **(Basic algorythm ready, but App crashing when applied)**.
 
-**3** - _Implement FDP (Frame Disaster Protocol) aka FPS Counter on Mangohud or as a independent overlay_ 
+**3** - _Implement FDP (Frame Disaster Protocol) aka FPS Counter on Mangohud or as a independent overlay_ 🚫
 
-**4** - _Have Fun_
+**4** - _Have Fun_ ✅
 
 **Future Features (Maybe?)**
 
 _**Tray Icon**_
 
-_**UI**_
+_**GUI**_
 
 _**AppImage Package**_
