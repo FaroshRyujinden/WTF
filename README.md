@@ -1,10 +1,10 @@
 
 ![256xPurple](https://github.com/user-attachments/assets/7b8bd99f-f735-47b6-b4ca-59ecb455d264)
 
-🇧🇷 **PT-BR** 
-
 # Wild Tuxanossaurus FrameGeneration (WTF)
 Wild Tuxanossaurus FrameGeneration (WTF) é um Software de Geração de Quadros para Linux (Similar a função de Frame Generation do Lossless Scaling)
+
+🇧🇷 **PT-BR** 
 
 **Este Projeto está nos primeiros estágios de desenvolvimento, É minha primeira tentativa de aprender código de programação então vou ter que pedir paciencia pra vocês pois não faço ideia do que to fazendo.**
 
@@ -28,10 +28,10 @@ _**Inferface pro Programa**_
 
 _**Pacote em .AppImage**_
 
-🇺🇸 **EN-US**
-
 # Wild Tuxanossaurus FrameGeneration (WTF)
 Wild Tuxanossaurus FrameGeneration (WTF) Is a Frame Generation App for Linux (Similar to Lossless Scaling Frame Gen Funcion).
+
+🇺🇸 **EN-US**
 
 **This project is a WIP and it is on the first stages of development, this is also my first attempt to code so I'll ask you guys for pacience cause I have no idea of what I'm doing.**
 
