@@ -1,0 +1,12 @@
+#Changelog v0.1
+
+#Window Manipulation is now working. (Alpha state)
+When selecting an Application in windowed mode and using the defined shortcut (Default F12) the app is now capable of resizing the window and it completely fills the screen chosen when opening the application.
+Tested and working on Gnome X11 and Wayland. 
+
+Known bugs:
+
+# Window does not apply correctly and you need to keep pressing F12 until it works.
+# Some applications have Flickering when they are expanded on the screen.
+
+
