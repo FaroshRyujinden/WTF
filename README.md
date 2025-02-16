@@ -18,6 +18,6 @@ Join our Discord to give your feedback, everyone is welcome :) - https://discord
 
 **1** - _RIP_ – **Raptor Immersive Projection** - The Window Manipulation ✅ _(Alpha)_
 
-**2** - _FDP_ **Fossilized Display Processing** - The Overlay for the Window with the FPS counter and support for Post Processing 🚫
+**2** - _FDP_ - **Fossilized Display Processing** - The Overlay for the Window with the FPS counter and support for Post Processing 🚫
 
-**3** - _OMG_ **Open-Source Mesozoic Glitches** - The Frame Generation Interpolation Loader (Will support custom algorithm) 🚫
+**3** - _OMG_ - **Open-Source Mesozoic Glitches** - The Frame Generation Interpolation Loader (Will support custom algorithm) 🚫
