@@ -41,7 +41,7 @@ I got tired of waiting for someone to create something like this so I've decided
 
 **1** - _Implement HYDRA (Hook Your Display: Raptor Attack) aka the Hook that captures the Game Window_ ✅
 
-**2** - _Implement OMG (Open-Source Mesozoic Glitches) aka FrameGen algorythm_ 🚫 **(Basic algorythm ready, but App crashing when applied)**.
+**2** - _Implement OMG (Open-Source Mesozoic Glitches) aka FrameGen algorithm_ 🚫 **(Basic algorithm ready, but App crashing when applied)**.
 
 **3** - _Implement FDP (Frame Disaster Protocol) aka FPS Counter as a independent overlay_ 🚫
 
